@@ -4,6 +4,7 @@
   "description": "An app to rearrange PDF pages for printing for bookbinding",
   "type": "module",
   "scripts": {
+    "cli": "bun cli.js",
     "dev": "vite --port 5173",
     "build": "vite build",
     "preview": "vite preview",

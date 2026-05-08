@@ -3,12 +3,10 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import { PDFDocument, PDFEmbeddedPage, degrees } from '@cantoo/pdf-lib';
-import { saveAs } from 'file-saver';
+import { join } from 'node:path';
 import { Signatures } from './signatures.js';
 import { WackyImposition } from './wacky_imposition.js';
 import { PAGE_LAYOUTS, PAGE_SIZES } from './constants.js';
-import JSZip from 'jszip';
-import { loadConfiguration } from './utils/formUtils.js';
 import {
   drawFoldlines,
   drawCropmarks,
@@ -305,60 +303,6 @@ export class Book {
   }
 
   /**
-   * Calls the appropriate builder based on [this.format]
-   *  to generate PDF & populate Previewer
-   * @param {boolean} isPreview - if it's true we only generate preview content, if it's not true... we still
-   *      generate preview content AND a downloadable zip
-   */
-  async createoutputfiles(isPreview) {
-    let previewPdf = null;
-
-    //  create a directory named after the input pdf and fill it with
-    //  the signatures
-    this.zip = new JSZip();
-    var origFileName = this.inputpdf;
-    origFileName = origFileName
-      .replace(/[-\s,_]+/g, '_')
-      .replace(/_*\.pdf/g, '')
-      .toLowerCase();
-    this.filename = origFileName;
-
-    if (
-      this.format == 'perfect' ||
-      this.format == 'booklet' ||
-      this.format == 'standardsig' ||
-      this.format == 'customsig'
-    ) {
-      const signatures = [{}];
-      previewPdf = await this.generateClassicFiles(isPreview, signatures);
-      if (!isPreview) await this.saveClassicFiles(signatures);
-      var rotationMetaInfo =
-        (this.paper_rotation_90 ? 'paper_rotated' : '') +
-        (this.source_rotation == 'none' ? '' : `_${this.source_rotation}`);
-      this.filename = `${origFileName}${rotationMetaInfo}`;
-    } else if (this.format == 'a9_3_3_4') {
-      previewPdf = await this.buildSheets(this.filename, this.book.a9_3_3_4_builder());
-    } else if (this.format == 'a10_6_10s') {
-      previewPdf = await this.buildSheets(this.filename, this.book.a10_6_10s_builder());
-    } else if (this.format == 'a_4_8s') {
-      previewPdf = await this.buildSheets(this.filename, this.book.a_4_8s_builder());
-    } else if (this.format == 'a_3_6s') {
-      previewPdf = await this.buildSheets(this.filename, this.book.a_3_6s_builder());
-    } else if (this.format == 'A7_2_16s') {
-      previewPdf = await this.buildSheets(this.filename, this.book.a7_2_16s_builder());
-    } else if (this.format == '1_3rd') {
-      previewPdf = await this.buildSheets(this.filename, this.book.page_1_3rd_builder());
-    } else if (this.format == '8_zine') {
-      previewPdf = await this.buildSheets(this.filename, this.book.page_8_zine_builder());
-    }
-
-    if (previewPdf != null) await this.displayPreview(previewPdf);
-
-    if (!isPreview) return this.saveZip();
-    else return Promise.resolve(1);
-  }
-
-  /**
    * Generates the signatures for a file from the input
    * @param {boolean} isPreview - whether we're generating files for a preview, or to save
    * @param {Object[]} signatures - object to organize the generated signatures on
@@ -397,98 +341,44 @@ export class Book {
     return previewPdf;
   }
   /**
-   * Writes the generated files to the zip file, combining them to an aggregate file if necessary
+   * Writes the generated signature files to outputDir
    * @param {Object} signatures
+   * @param {string} outputDir
    */
-  async saveClassicFiles(signatures) {
+  async saveClassicFiles(signatures, outputDir) {
     if (this.print_file != 'aggregated') {
-      const saveSignatures = async () => {
-        const tasks = signatures.map(async (sig) => {
-          await sig.front?.save().then((pdfBytes) => {
-            this.zip.file(`signatures/${sig.name}_side1.pdf`, pdfBytes);
-          });
-          await sig.back?.save().then((pdfBytes) => {
-            this.zip.file(`signatures/${sig.name}_side2.pdf`, pdfBytes);
-          });
-          await sig.duplex?.save().then((pdfBytes) => {
-            this.zip.file(`signatures/${sig.name}_duplex.pdf`, pdfBytes);
-          });
-        });
-        await Promise.all(tasks);
-      };
-      await saveSignatures();
+      const tasks = signatures.map(async (sig) => {
+        if (sig.front) await Bun.write(join(outputDir, `${sig.name}_side1.pdf`), await sig.front.save());
+        if (sig.back) await Bun.write(join(outputDir, `${sig.name}_side2.pdf`), await sig.back.save());
+        if (sig.duplex) await Bun.write(join(outputDir, `${sig.name}_duplex.pdf`), await sig.duplex.save());
+      });
+      await Promise.all(tasks);
     }
 
     if (this.print_file != 'signatures') {
-      const saveAggregate = async () => {
-        const aggregate = {
-          front: !this.duplex ? await PDFDocument.create() : null,
-          back: !this.duplex ? await PDFDocument.create() : null,
-          duplex: this.duplex ? await PDFDocument.create() : null,
-        };
-        for (const sig of signatures) {
-          // Adding pages to aggregate PDFs has to be done in order, not with promises
-          if (aggregate.front) {
-            const copiedPages = await aggregate.front.copyPages(
-              sig.front,
-              sig.front.getPageIndices()
-            );
-            copiedPages.forEach((page) => aggregate.front.addPage(page));
-          }
-          if (aggregate.back) {
-            const copiedPages = await aggregate.back.copyPages(sig.back, sig.back.getPageIndices());
-            copiedPages.forEach((page) => aggregate.back.addPage(page));
-          }
-          if (aggregate.duplex) {
-            const copiedPages = await aggregate.duplex.copyPages(
-              sig.duplex,
-              sig.duplex.getPageIndices()
-            );
-            copiedPages.forEach((page) => aggregate.duplex.addPage(page));
-          }
-        }
+      const aggregate = {
+        front: !this.duplex ? await PDFDocument.create() : null,
+        back: !this.duplex ? await PDFDocument.create() : null,
+        duplex: this.duplex ? await PDFDocument.create() : null,
+      };
+      for (const sig of signatures) {
         if (aggregate.front) {
-          await aggregate.front.save().then((pdfBytes) => {
-            this.zip.file(`${this.filename}_typeset_side1.pdf`, pdfBytes);
-          });
+          const pages = await aggregate.front.copyPages(sig.front, sig.front.getPageIndices());
+          pages.forEach((p) => aggregate.front.addPage(p));
         }
         if (aggregate.back) {
-          await aggregate.back.save().then((pdfBytes) => {
-            this.zip.file(`${this.filename}_typeset_side2.pdf`, pdfBytes);
-          });
+          const pages = await aggregate.back.copyPages(sig.back, sig.back.getPageIndices());
+          pages.forEach((p) => aggregate.back.addPage(p));
         }
         if (aggregate.duplex) {
-          await aggregate.duplex.save().then((pdfBytes) => {
-            this.zip.file(`${this.filename}_typeset.pdf`, pdfBytes);
-          });
+          const pages = await aggregate.duplex.copyPages(sig.duplex, sig.duplex.getPageIndices());
+          pages.forEach((p) => aggregate.duplex.addPage(p));
         }
-      };
-      await saveAggregate();
+      }
+      if (aggregate.front) await Bun.write(join(outputDir, `${this.filename}_typeset_side1.pdf`), await aggregate.front.save());
+      if (aggregate.back) await Bun.write(join(outputDir, `${this.filename}_typeset_side2.pdf`), await aggregate.back.save());
+      if (aggregate.duplex) await Bun.write(join(outputDir, `${this.filename}_typeset.pdf`), await aggregate.duplex.save());
     }
-  }
-
-  /**
-   * Functionality for displaying on on-page preview nicely.
-   * @param {PDFDocument} previewPdf - PDF to display as preview
-   */
-  async displayPreview(previewPdf) {
-    console.log('Attempting to generate preview for ', previewPdf);
-    const previewFrame = document.getElementById('pdf');
-    const pdfDataUri = await previewPdf.saveAsBase64({ dataUri: true });
-    const viewerPrefs = previewPdf.catalog.getOrCreateViewerPreferences();
-
-    viewerPrefs.setHideToolbar(false);
-    viewerPrefs.setHideMenubar(false);
-    viewerPrefs.setHideWindowUI(false);
-    viewerPrefs.setFitWindow(true);
-    viewerPrefs.setCenterWindow(true);
-    viewerPrefs.setDisplayDocTitle(true);
-
-    previewFrame.src = pdfDataUri;
-    previewFrame.style.width = `450px`;
-    const height = (this.papersize[1] / this.papersize[0]) * 500;
-    previewFrame.style.height = `${height}px`;
-    previewFrame.style.display = '';
   }
 
   /**
@@ -689,24 +579,6 @@ export class Book {
     return [pdfFront, pdfBack];
   }
 
-  bundleSettings() {
-    const currentConfig = loadConfiguration();
-    const settings =
-      `Imposer settings: ${JSON.stringify(currentConfig, null, 2)}` +
-      '\n\n' +
-      `Link to the imposer with these settings: ${window.location.href}`;
-    this.zip.file('settings.txt', settings);
-  }
-
-  saveZip() {
-    console.log('Saving zip... ');
-    this.bundleSettings();
-    return this.zip.generateAsync({ type: 'blob' }).then((blob) => {
-      console.log('  calling saveAs on ', this.filename);
-      saveAs(blob, `${this.filename}_bookbinder.zip`);
-    });
-  }
-
   /**
    * @typedef Sheet
    * @type {object}
@@ -734,7 +606,7 @@ export class Book {
    * @param {string} builder.fileNameMod: string to affix to exported file name (contains no buffer begin/end characters)
    * @param {boolean} builder.isPacked: boolean - true if white spaces goes on the outside, false if white space goes everywhere (non-binding edge)
    */
-  async buildSheets(id, builder) {
+  async buildSheets(id, builder, outputDir) {
     const sheets = builder.sheetMaker(this.pagecount);
     const lineMaker = builder.lineMaker();
     console.log('Working with the sheet descritpion: ', sheets);
@@ -756,21 +628,13 @@ export class Book {
       );
     }
     {
-      console.log(`Trying to save to PDF ${builder.fileNameMod} w/ packing : ${this.pack_pages}`);
       const fileName = `${id}_${builder.fileNameMod}${this.duplex ? '' : '_fronts'}.pdf`;
-      await outPDF.save().then((pdfBytes) => {
-        console.log('Calling zip.file on ', fileName);
-        this.zip.file(fileName, pdfBytes);
-      });
+      await Bun.write(join(outputDir, fileName), await outPDF.save());
       this.filelist.push(fileName);
     }
     if (!this.duplex) {
-      console.log('Trying to save to PDF (back pages)');
       const fileName = `${id}_${builder.fileNameMod}_backs.pdf`;
-      await outPDF_back.save().then((pdfBytes) => {
-        console.log('Calling zip.file on ', fileName);
-        this.zip.file(fileName, pdfBytes);
-      });
+      await Bun.write(join(outputDir, fileName), await outPDF_back.save());
       this.filelist.push(fileName);
     }
     console.log('buildSheets complete');

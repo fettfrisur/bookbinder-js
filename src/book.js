@@ -71,7 +71,6 @@ export class Book {
     this.orderedpages = []; //  ordered list of page numbers (consecutive)
     this.rearrangedpages = []; //  reordered list of page numbers (signatures etc.)
     this.filelist = []; //  list of ouput filenames and path
-    this.zip = null;
 
     this.update(configuration);
   }

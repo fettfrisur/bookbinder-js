@@ -30,8 +30,6 @@
   },
   "dependencies": {
     "@cantoo/pdf-lib": "^1.21.0",
-    "file-saver": "^2.0.5",
-    "jszip": "^3.7.1",
     "vite-plugin-html-inject": "^1.1.2",
     "zod": "^3.22.4"
   }

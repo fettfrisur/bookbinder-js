@@ -104,8 +104,12 @@ function yamlToRaw(yaml) {
 
 function argsToRaw(values) {
   const result = {};
-  const str = (k, prop) => { if (values[k] !== undefined) result[prop] = values[k]; };
-  const flag = (k, prop) => { if (values[k] !== undefined) result[prop] = values[k]; };
+  const str = (k, prop) => {
+    if (values[k] !== undefined) result[prop] = values[k];
+  };
+  const flag = (k, prop) => {
+    if (values[k] !== undefined) result[prop] = values[k];
+  };
 
   str('paper-size', 'paperSize');
   flag('paper-rotation', 'paperRotation90');
@@ -209,7 +213,10 @@ async function main() {
     (config.paperRotation90 ? 'paper_rotated' : '') +
     (config.sourceRotation === 'none' ? '' : `_${config.sourceRotation}`);
   book.filename =
-    inputBase.replace(/[-\s,_]+/g, '_').replace(/_*\.pdf/gi, '').toLowerCase() + rotationMeta;
+    inputBase
+      .replace(/[-\s,_]+/g, '_')
+      .replace(/_*\.pdf/gi, '')
+      .toLowerCase() + rotationMeta;
 
   const isClassic = ['booklet', 'perfect', 'standardsig', 'customsig'].includes(config.sigFormat);
 

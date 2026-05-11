@@ -347,9 +347,12 @@ export class Book {
   async saveClassicFiles(signatures, outputDir) {
     if (this.print_file != 'aggregated') {
       const tasks = signatures.map(async (sig) => {
-        if (sig.front) await Bun.write(join(outputDir, `${sig.name}_side1.pdf`), await sig.front.save());
-        if (sig.back) await Bun.write(join(outputDir, `${sig.name}_side2.pdf`), await sig.back.save());
-        if (sig.duplex) await Bun.write(join(outputDir, `${sig.name}_duplex.pdf`), await sig.duplex.save());
+        if (sig.front)
+          await Bun.write(join(outputDir, `${sig.name}_side1.pdf`), await sig.front.save());
+        if (sig.back)
+          await Bun.write(join(outputDir, `${sig.name}_side2.pdf`), await sig.back.save());
+        if (sig.duplex)
+          await Bun.write(join(outputDir, `${sig.name}_duplex.pdf`), await sig.duplex.save());
       });
       await Promise.all(tasks);
     }
@@ -374,9 +377,21 @@ export class Book {
           pages.forEach((p) => aggregate.duplex.addPage(p));
         }
       }
-      if (aggregate.front) await Bun.write(join(outputDir, `${this.filename}_typeset_side1.pdf`), await aggregate.front.save());
-      if (aggregate.back) await Bun.write(join(outputDir, `${this.filename}_typeset_side2.pdf`), await aggregate.back.save());
-      if (aggregate.duplex) await Bun.write(join(outputDir, `${this.filename}_typeset.pdf`), await aggregate.duplex.save());
+      if (aggregate.front)
+        await Bun.write(
+          join(outputDir, `${this.filename}_typeset_side1.pdf`),
+          await aggregate.front.save()
+        );
+      if (aggregate.back)
+        await Bun.write(
+          join(outputDir, `${this.filename}_typeset_side2.pdf`),
+          await aggregate.back.save()
+        );
+      if (aggregate.duplex)
+        await Bun.write(
+          join(outputDir, `${this.filename}_typeset.pdf`),
+          await aggregate.duplex.save()
+        );
     }
   }
 

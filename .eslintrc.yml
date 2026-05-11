@@ -1,6 +1,8 @@
 env:
   browser: true
   es2021: true
+globals:
+  Bun: readonly
 extends: eslint:recommended
 parserOptions:
   ecmaVersion: latest

@@ -4,10 +4,10 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - name: Install modules
-        run: npm install
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install
       - name: Run Prettier
-        run: npm run prettier
+        run: bun run prettier
       - name: Run ESLint
-        run: npm run lint
+        run: bun run lint

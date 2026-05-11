@@ -4,9 +4,8 @@
   "description": "An app to rearrange PDF pages for printing for bookbinding",
   "type": "module",
   "scripts": {
-    "dev": "vite --port 5173",
-    "build": "vite build",
-    "preview": "vite preview",
+    "cli": "bun cli.js",
+    "bundle": "bun build cli.js --outfile bookbinder.js --target=bun",
     "test": "vitest --pool=forks",
     "test:unit": "vitest src",
     "test:pdf": "vitest --pool=forks pdf-test ",
@@ -23,15 +22,10 @@
     "jsdom": "^26.0.0",
     "pdf-visual-diff": "^0.14.0",
     "prettier": "^3.2.5",
-    "vite": "^5.0.10",
-    "vite-plugin-package-version": "^1.1.0",
     "vitest": "^1.0.4"
   },
   "dependencies": {
     "@cantoo/pdf-lib": "^1.21.0",
-    "file-saver": "^2.0.5",
-    "jszip": "^3.7.1",
-    "vite-plugin-html-inject": "^1.1.2",
     "zod": "^3.22.4"
   }
 }

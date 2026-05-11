@@ -24,7 +24,6 @@ describe('Book model', () => {
     orderedpages: [],
     rearrangedpages: [],
     filelist: [],
-    zip: null,
     page_layout: {
       rotations: [[-90], [-90]],
       landscape: true,

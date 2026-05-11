@@ -1,4 +1,18 @@
-# bookbinder-js
+# bookbinder-js (CLI fork)
+
+> **Fork notice:** This is a personal fork of [bookbinder-js](https://github.com/momijizukamori/bookbinder-js)
+> by [momijizukamori](https://github.com/momijizukamori). The original is a polished browser-based
+> web app — if that's what you're looking for, go there.
+>
+> This fork strips the web UI entirely. The motivation was to have the tool available on the
+> command line, and to use it as an exercise in seeing what a Bun-native rewrite would look like
+> — leaning on Bun's built-in APIs wherever possible and shedding the browser-oriented
+> dependencies. The result is a single `cli.js` entry point that accepts all the same options
+> as the original web form, either as flags or via a YAML config file.
+>
+> This version was produced by the owner of the fork directing
+> [Claude](https://claude.ai) (Anthropic's AI) via the Claude Code web interface.
+> The code was written by Claude under their supervision and guidance.
 
 A JS application to format PDFs for bookbinding, based on [Bookbinder](http://quantumelephant.co.uk/bookbinder/bookbinder.html), rewritten to use [PDF-Lib](https://pdf-lib.js.org) as its backend library. Like Bookbinder, it is licensed under the [Mozilla Public License](https://www.mozilla.org/en-US/MPL/).
 

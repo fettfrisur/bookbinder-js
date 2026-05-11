@@ -5,9 +5,7 @@
   "type": "module",
   "scripts": {
     "cli": "bun cli.js",
-    "dev": "vite --port 5173",
-    "build": "vite build",
-    "preview": "vite preview",
+    "bundle": "bun build cli.js --outfile bookbinder.js --target=bun",
     "test": "vitest --pool=forks",
     "test:unit": "vitest src",
     "test:pdf": "vitest --pool=forks pdf-test ",
@@ -24,13 +22,10 @@
     "jsdom": "^26.0.0",
     "pdf-visual-diff": "^0.14.0",
     "prettier": "^3.2.5",
-    "vite": "^5.0.10",
-    "vite-plugin-package-version": "^1.1.0",
     "vitest": "^1.0.4"
   },
   "dependencies": {
     "@cantoo/pdf-lib": "^1.21.0",
-    "vite-plugin-html-inject": "^1.1.2",
     "zod": "^3.22.4"
   }
 }
